@@ -61,13 +61,12 @@ int Dict::find_longest_match(vector<string> &char_vec,size_t pos)
 	return len;
 }
 
-Segmenter::Segmenter(Model *ikenlm, MaxentModel *imaxent_model, Dict *idict, double ialpha, string &input_sen)
+Segmenter::Segmenter(Model *ikenlm, MaxentModel *imaxent_model, Dict *idict, string &input_sen)
 {
 	NGRAM = 3;
 	kenlm = ikenlm;
 	maxent_model = imaxent_model;
 	dict = idict;
-	alpha = ialpha;
 	load_chartype();
 	TrimLine(input_sen);
 	char_vec = {"B_1","B_0"};
@@ -230,7 +229,7 @@ vector<Cand> Segmenter::expand(const Cand &cand, vector<double> &maxent_scores)
 		string ct = meta_char_vec.at(cur_pos) + "/" + e_tag;
 		double lm_score = kenlm->Score(cand.lm_state, vocab.Index(ct), out_state);
 		cand_new.lm_state = out_state;
-		cand_new.score = cand.score + alpha*lm_score + (1-alpha)*maxent_score;
+		cand_new.score = cand.score + 0.4*lm_score + 0.6*maxent_score;
 		candvec.push_back(cand_new);
 	}
 	return candvec;

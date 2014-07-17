@@ -1,5 +1,5 @@
 CXX=g++
-CXXFLAGS=-std=c++11 -O3 -fopenmp -lz -I. -DKENLM_MAX_ORDER=6
+CXXFLAGS=-std=c++11 -O3 -fopenmp -lz -I. -DKENLM_MAX_ORDER=6 -lrt
 objs=lm/*.o util/*.o util/double-conversion/*.o
 translator: main.o segmenter.o maxent.o myutils.o $(objs)
 	$(CXX) -o cws main.o segmenter.o maxent.o myutils.o $(objs) $(CXXFLAGS)

@@ -50,7 +50,7 @@ void Str_to_char_vec(vector<string> &cv, string &s, const string &encoding)
 			if (x < 128)
 				cv.push_back(s.substr(i,1));
 			else if (x < 224)
-				cv.push_back(s.substr(i,2));
+				cv.push_back(s.substr(i++,2));
 			else if (x < 240)
 			{
 				cv.push_back(s.substr(i,3));

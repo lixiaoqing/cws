@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "segmenter.h"
 
-void seg_file(Model *kenlm, MaxentModel *maxent_model,Dict *dict, double alpha, string &inputfile, string &outputfile)
+void seg_file(Model *kenlm, MaxentModel *maxent_model,Dict *dict, string &inputfile, string &outputfile)
 {
 	ifstream fin;
 	fin.open(inputfile.c_str());
@@ -25,7 +25,7 @@ void seg_file(Model *kenlm, MaxentModel *maxent_model,Dict *dict, double alpha, 
 //#pragma omp parallel for num_threads(4)
 	for (size_t i=0;i<input_sen.size();i++)
 	{
-		Segmenter segmenter(kenlm,maxent_model,dict,alpha,input_sen.at(i));
+		Segmenter segmenter(kenlm,maxent_model,dict,input_sen.at(i));
 		output_sen.at(i) = segmenter.decode();
 	}
 
@@ -61,16 +61,12 @@ int main(int argc, char* argv[])
 	}	
 	string inputfile;
 	string outputfile;
-	string s_alpha;
-	string corpus_name;
 	for (int i=1;i<argc;++i)
 	{
 		string si(argv[i]);
 		
 		if (si=="-i") inputfile = argv[++i];
 		else if (si=="-o") outputfile = argv[++i];
-		else if (si=="-a") s_alpha = argv[++i];
-		else if (si=="-c") corpus_name = argv[++i];
 		else if (si=="-h")
 		{
 			cerr << test_help << endl;
@@ -78,9 +74,8 @@ int main(int argc, char* argv[])
 		}
 	}
 		
-	double my_alpha = stod(s_alpha);
-	string lm_file = "model/lm_" + corpus_name;
-	string maxent_file = "model/memodel_chartype_dict_" + corpus_name;
+	string lm_file = "model/lm_pku";
+	string maxent_file = "model/memodel_chartype_dict_pku";
 	Model kenlm(lm_file.c_str());
 	MaxentModel maxent_model(maxent_file);
 	Dict dict;
@@ -89,7 +84,7 @@ int main(int argc, char* argv[])
 	cout<<"It takes "<<(double)(end-begin)/CLOCKS_PER_SEC<<" seconds to load model.\n";
 	begin = clock();
 
-	seg_file(&kenlm,&maxent_model,&dict,my_alpha,inputfile,outputfile);
+	seg_file(&kenlm,&maxent_model,&dict,inputfile,outputfile);
 
 	end = clock();
 	cout<<"It takes "<<(double)(end-begin)/CLOCKS_PER_SEC<<" seconds to segment the file.\n";
