@@ -126,6 +126,11 @@ string Segmenter::decode()
 		candlist_old.swap(candlist_new);
 		candlist_new.resize(0);
 	}
+	for (auto &cand : candlist_old)
+	{
+		State out_state;
+		cand.score += kenlm->Score(cand.lm_state, kenlm->GetVocabulary().EndSentence(), out_state);
+	}
 	auto it = max_element(candlist_old.begin(),candlist_old.end());
 	return get_output(it->tags);
 }
