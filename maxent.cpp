@@ -28,7 +28,6 @@ void MaxentModel::load(const string &modelfile)
 		return;
 	}
 	gzclose(f);
-	cout<<"load maxent model file "<<modelfile<<" over\n";
 }
 
 void MaxentModel::load_bin(const string &modelfile)

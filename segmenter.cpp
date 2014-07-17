@@ -1,5 +1,38 @@
 #include "segmenter.h"
 
+Segmenter::Segmenter(Model *ikenlm, MaxentModel *imaxent_model, double ialpha, string &input_sen)
+{
+	kenlm = ikenlm;
+	maxent_model = imaxent_model;
+	NGRAM = 3;
+	alpha = ialpha;
+	load_chartype();
+	TrimLine(input_sen);
+	char_vec = {"B_1","B_0"};
+	Str_to_char_vec(char_vec,input_sen,"gbk");
+	char_vec.push_back("E_0");
+	char_vec.push_back("E_1");
+	for (auto const c : char_vec)
+	{
+		meta_char_vec.push_back(char2meta(c));
+	}
+	maxent_scores_vec.resize(char_vec.size());
+	for (cur_pos=2;cur_pos<char_vec.size()-2;cur_pos++)
+	{
+		vector<string> features = get_features();
+		maxent_model->eval_all(maxent_scores_vec.at(cur_pos),features);
+	}
+
+	State state(kenlm->BeginSentenceState());
+	Cand init_cand = {"SS",state,0.0};
+	candlist_old.push_back(init_cand);
+
+	validtagtable['B'] = {'M','E'};
+	validtagtable['M'] = {'M','E'};
+	validtagtable['E'] = {'S','B'};
+	validtagtable['S'] = {'S','B'};
+}
+
 void Segmenter::Str_to_char_vec(vector<string> &cv, string &s, const string &encoding)
 {
 	if (encoding == "gbk")
@@ -61,33 +94,6 @@ void Segmenter::load_chartype()
 		cnchar.insert(charvec.at(i));
 }
 
-Segmenter::Segmenter(Model *ikenlm, MaxentModel *imaxent_model, double ialpha, string &input_sen)
-{
-	kenlm = ikenlm;
-	maxent_model = imaxent_model;
-	NGRAM = 3;
-	alpha = ialpha;
-	load_chartype();
-	TrimLine(input_sen);
-	char_vec = {"B_1","B_0"};
-	Str_to_char_vec(char_vec,input_sen,"gbk");
-	char_vec.push_back("E_0");
-	char_vec.push_back("E_1");
-	for (auto const c : char_vec)
-	{
-		meta_char_vec.push_back(char2meta(c));
-	}
-
-	State state(kenlm->BeginSentenceState());
-	Cand init_cand = {"SS",state,0.0};
-	candlist_old.push_back(init_cand);
-
-	validtagtable['B'] = {'M','E'};
-	validtagtable['M'] = {'M','E'};
-	validtagtable['E'] = {'S','B'};
-	validtagtable['S'] = {'S','B'};
-}
-
 string Segmenter::char2meta(const string &mychar)
 {
 	if (fnchar.count(mychar))
@@ -115,12 +121,9 @@ string Segmenter::decode()
 {
 	for (cur_pos=2;cur_pos<char_vec.size()-2;cur_pos++)
 	{
-		vector<double> maxent_scores;
-		vector<string> features = get_features();
-		maxent_model->eval_all(maxent_scores,features);
 		for (const auto &e_cand : candlist_old)
 		{
-			vector<Cand> candvec = expand(e_cand,maxent_scores);
+			vector<Cand> candvec = expand(e_cand,maxent_scores_vec.at(cur_pos));
 			add_to_new(candvec);
 		}
 		candlist_old.swap(candlist_new);

@@ -11,17 +11,32 @@ void seg_file(Model *kenlm, MaxentModel *maxent_model, double alpha, string &inp
 		return;
 	}
 
+	vector<string> input_sen;
+	vector<string> output_sen;
+	string line;
+	while(getline(fin,line))
+	{
+		TrimLine(line);
+		input_sen.push_back(line);
+	}
+	fin.close();
+
+	output_sen.resize(input_sen.size());
+#pragma omp parallel for num_threads(4)
+	for (size_t i=0;i<input_sen.size();i++)
+	{
+		Segmenter segmenter(kenlm,maxent_model,alpha,input_sen.at(i));
+		output_sen.at(i) = segmenter.decode();
+	}
+
 	ofstream fout;
 	fout.open(outputfile.c_str());
-	string input_sen;
-	while(getline(fin,input_sen))
+	for (const auto &sen : output_sen)
 	{
-		Segmenter segmenter(kenlm,maxent_model,alpha,input_sen);
-		string output_sen = segmenter.decode();
-		fout<<output_sen<<endl;
+		fout<<sen<<endl;
 	}
+
 	fout.close();
-	fin.close();
 }
 
 int main(int argc, char* argv[])

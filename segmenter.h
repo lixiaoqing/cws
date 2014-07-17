@@ -40,6 +40,7 @@ class Segmenter
 		map<char,vector<char> > validtagtable;
 		vector<string> char_vec;
 		vector<string> meta_char_vec;
+		vector<vector<double> > maxent_scores_vec;
 		vector<Cand> candlist_old;
 		vector<Cand> candlist_new;
 		size_t cur_pos;
