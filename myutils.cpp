@@ -29,3 +29,44 @@ void TrimLine(string &line)
 	line.erase(0,line.find_first_not_of(" \t\r\n"));
 	line.erase(line.find_last_not_of(" \t\r\n")+1);
 }
+
+void Str_to_char_vec(vector<string> &cv, string &s, const string &encoding)
+{
+	if (encoding == "gbk")
+	{
+		for (size_t i = 0; i < s.size(); i++)
+		{
+			if (s[i] >= 0)
+				cv.push_back(s.substr(i,1));
+			else
+				cv.push_back(s.substr(i++,2));
+		}
+	}
+	else if(encoding == "utf8")
+	{
+		for (size_t i = 0; i < s.size(); i++)
+		{
+			unsigned char x = (unsigned char)s[i];
+			if (x < 128)
+				cv.push_back(s.substr(i,1));
+			else if (x < 224)
+				cv.push_back(s.substr(i,2));
+			else if (x < 240)
+			{
+				cv.push_back(s.substr(i,3));
+				i += 2;
+			}
+			else if (x < 248)
+			{
+				cv.push_back(s.substr(i,4));
+				i += 3;
+			}
+			else
+			{
+				cout<<"bad char!\n";
+				return;
+			}
+		}
+	}
+}
+

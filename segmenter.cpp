@@ -1,10 +1,72 @@
 #include "segmenter.h"
 
-Segmenter::Segmenter(Model *ikenlm, MaxentModel *imaxent_model, double ialpha, string &input_sen)
+void Dict::load_dict()
 {
+	fstream fin;
+	fin.open("model/dict");
+	if (!fin.is_open())
+	{
+		cerr<<"Fail to open dict file!\n";
+		return;
+	}
+	string w;
+	while(fin>>w)
+	{
+		vector<string> char_vec;
+		Str_to_char_vec(char_vec,w,"gbk");
+		add_word(char_vec);
+	}
+	fin.close();
+	cout<<"load dict over\n";
+}
+
+void Dict::add_word(vector<string> &char_vec)
+{
+	TrieNode* current = root;
+	for (const auto &c : char_vec)
+	{
+		auto it = current->char_to_children_map.find(c);
+		if ( it != current->char_to_children_map.end() )
+		{
+			current = it->second;
+		}
+		else
+		{
+			TrieNode* tmp = new TrieNode();
+			current->char_to_children_map.insert(make_pair(c,tmp));
+			current = tmp;
+		}
+	}
+	current->flag = true;
+}
+
+int Dict::find_longest_match(vector<string> &char_vec,size_t pos)
+{
+	TrieNode* current = root;
+	int len = 1;
+	for (size_t i=pos;i<char_vec.size();i++)
+	{
+		auto it = current->char_to_children_map.find(char_vec.at(i));
+		if (it != current->char_to_children_map.end())
+		{
+			current = it->second;
+			if (current->flag == true)
+			{
+				len = i - pos + 1;
+			}
+		}
+		else
+			break;
+	}
+	return len;
+}
+
+Segmenter::Segmenter(Model *ikenlm, MaxentModel *imaxent_model, Dict *idict, double ialpha, string &input_sen)
+{
+	NGRAM = 3;
 	kenlm = ikenlm;
 	maxent_model = imaxent_model;
-	NGRAM = 3;
+	dict = idict;
 	alpha = ialpha;
 	load_chartype();
 	TrimLine(input_sen);
@@ -16,6 +78,9 @@ Segmenter::Segmenter(Model *ikenlm, MaxentModel *imaxent_model, double ialpha, s
 	{
 		meta_char_vec.push_back(char2meta(c));
 	}
+
+	lt0_vec.resize(char_vec.size(),make_pair(1,'S'));
+	fill_lt0_vec();
 	maxent_scores_vec.resize(char_vec.size());
 	for (cur_pos=2;cur_pos<char_vec.size()-2;cur_pos++)
 	{
@@ -33,41 +98,30 @@ Segmenter::Segmenter(Model *ikenlm, MaxentModel *imaxent_model, double ialpha, s
 	validtagtable['S'] = {'S','B'};
 }
 
-void Segmenter::Str_to_char_vec(vector<string> &cv, string &s, const string &encoding)
+void Segmenter::fill_lt0_vec()
 {
-	if (encoding == "gbk")
+	for (cur_pos=2;cur_pos<meta_char_vec.size()-2;cur_pos++)
 	{
-		for (size_t i = 0; i < s.size(); i++)
+		int max_len = dict->find_longest_match(meta_char_vec,cur_pos);
+		if (max_len >1)
 		{
-			if (s[i] >= 0)
-				cv.push_back(s.substr(i,1));
-			else
-				cv.push_back(s.substr(i++,2));
-		}
-	}
-	else if(encoding == "utf8")
-	{
-		for (size_t i = 0; i < s.size(); i++)
-		{
-			unsigned char x = (unsigned char)s[i];
-			if (x < 128)
-				cv.push_back(s.substr(i,1));
-			else if (x < 224)
-				cv.push_back(s.substr(i,2));
-			else if (x < 240)
+			if (lt0_vec.at(cur_pos).first < max_len)
 			{
-				cv.push_back(s.substr(i,3));
-				i += 2;
+				lt0_vec.at(cur_pos).first = max_len;
+				lt0_vec.at(cur_pos).second = 'B';
 			}
-			else if (x < 248)
+			if (lt0_vec.at(cur_pos+max_len-1).first < max_len)
 			{
-				cv.push_back(s.substr(i,4));
-				i += 3;
+				lt0_vec.at(cur_pos+max_len-1).first = max_len;
+				lt0_vec.at(cur_pos+max_len-1).second = 'E';
 			}
-			else
+			for (size_t i=cur_pos+1;i<cur_pos+max_len-1;i++)
 			{
-				cout<<"bad char!\n";
-				return;
+				if (lt0_vec.at(i).first < max_len)
+				{
+					lt0_vec.at(i).first = max_len;
+					lt0_vec.at(i).second = 'M';
+				}
 			}
 		}
 	}
@@ -151,6 +205,10 @@ vector<string> Segmenter::get_features()
 	feature_vec.push_back("7/"+meta_char_vec.at(cur_pos)+meta_char_vec.at(cur_pos+1));
 	feature_vec.push_back("8/"+meta_char_vec.at(cur_pos+1)+meta_char_vec.at(cur_pos+2));
 	feature_vec.push_back("9/"+meta_char_vec.at(cur_pos-1)+meta_char_vec.at(cur_pos+1));
+	feature_vec.push_back("10/"+to_string(lt0_vec.at(cur_pos).first)+lt0_vec.at(cur_pos).second);
+	feature_vec.push_back("11/"+meta_char_vec.at(cur_pos-1)+lt0_vec.at(cur_pos).second);
+	feature_vec.push_back("12/"+meta_char_vec.at(cur_pos)+lt0_vec.at(cur_pos).second);
+	feature_vec.push_back("13/"+meta_char_vec.at(cur_pos+1)+lt0_vec.at(cur_pos).second);
 	return feature_vec;
 }
 
