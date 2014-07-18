@@ -71,6 +71,11 @@ void Segmenter::fill_dict_info()
 		get_final_ambiguity_status();
 	for (cur_pos=2;cur_pos<sen_len-2;cur_pos++)
 		get_matching_indicator_and_lt0();
+	/*
+	for (cur_pos=2;cur_pos<sen_len-2;cur_pos++)
+		cout<<ambiguity_status_vec.at(cur_pos)<<len_vec.at(cur_pos)<<dict_tag_vec.at(cur_pos)<<' ';
+	cout<<endl;
+	*/
 }
 
 void Segmenter::get_raw_ambiguity_status()
@@ -256,11 +261,19 @@ vector<Cand> Segmenter::expand(const Cand &cand, vector<double> &maxent_scores)
 		cand_new.lm_state = out_state;
 
 		string matching_indicator(1,matching_indicator_vec.at(cur_pos).at(tag2sub[e_tag]));
-		State tmp_state;
-		const Vocabulary &flm_vocab = kenflm->GetVocabulary();
-		flm_score = kenflm->FullScoreForgotState(&index_vec.at(sen_len-1-cur_pos),&index_vec.at(sen_len+1-cur_pos),flm_vocab.Index(matching_indicator),tmp_state).prob;
+		if (len_vec.at(cur_pos) == 1)
+		{
+			matching_indicator = "I/1N";
+		}
+		else
+		{
+			matching_indicator += "/" + to_string(len_vec.at(cur_pos))+ambiguity_status_vec.at(cur_pos);
+			State tmp_state;
+			const Vocabulary &flm_vocab = kenflm->GetVocabulary();
+			flm_score = kenflm->FullScoreForgotState(&index_vec.at(sen_len-1-cur_pos),&index_vec.at(sen_len+1-cur_pos),flm_vocab.Index(matching_indicator),tmp_state).prob;
+		}
 
-		cand_new.score = cand.score + 0.5*lm_score + 0.5*flm_score + 0.5*maxent_score;
+		cand_new.score = cand.score + 0.4*lm_score + 0.0*flm_score + 0.6*maxent_score;
 		candvec.push_back(cand_new);
 	}
 	return candvec;

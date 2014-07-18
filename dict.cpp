@@ -50,7 +50,7 @@ vector<pair<int,int> > Dict::find_matched_dict_words(vector<string> &char_vec,si
 		if (it != current->char_to_children_map.end())
 		{
 			current = it->second;
-			if (current->flag == true)
+			if (current->flag == true && i != pos)
 			{
 				matched_words.push_back(make_pair(pos,i));
 			}
