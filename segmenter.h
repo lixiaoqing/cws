@@ -40,7 +40,7 @@ class Dict
 class Segmenter
 {
 	public:
-		Segmenter(Model *ikenlm, MaxentModel *imaxent_model, Dict *idict, string &input_sen);
+		Segmenter(Model *ikenlm, MaxentModel *imaxent_model, Model *ikenflm, Dict *idict, string &input_sen);
 		string decode();
 	private:
 		vector<Cand> expand(const Cand &cand,vector<double> &maxent_scores);
@@ -56,6 +56,7 @@ class Segmenter
 	private:
 		Model *kenlm;
 		MaxentModel *maxent_model;
+		Model *kenflm;
 		Dict *dict;
 		size_t NGRAM;
 		set<string> fnchar;
@@ -63,6 +64,7 @@ class Segmenter
 		map<char,vector<char> > validtagtable;
 		vector<string> char_vec;
 		vector<string> meta_char_vec;
+		vector<lm::WordIndex> index_vec;
 		vector<pair<int,char> > lt0_vec;
 		vector<vector<double> > maxent_scores_vec;
 		vector<Cand> candlist_old;

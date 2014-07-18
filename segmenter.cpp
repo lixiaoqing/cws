@@ -61,11 +61,12 @@ int Dict::find_longest_match(vector<string> &char_vec,size_t pos)
 	return len;
 }
 
-Segmenter::Segmenter(Model *ikenlm, MaxentModel *imaxent_model, Dict *idict, string &input_sen)
+Segmenter::Segmenter(Model *ikenlm, MaxentModel *imaxent_model, Model *ikenflm, Dict *idict, string &input_sen)
 {
 	NGRAM = 3;
 	kenlm = ikenlm;
 	maxent_model = imaxent_model;
+	kenflm = ikenflm;
 	dict = idict;
 	load_chartype();
 	TrimLine(input_sen);
@@ -73,10 +74,13 @@ Segmenter::Segmenter(Model *ikenlm, MaxentModel *imaxent_model, Dict *idict, str
 	Str_to_char_vec(char_vec,input_sen,"gbk");
 	char_vec.push_back("E_0");
 	char_vec.push_back("E_1");
+	const Vocabulary &flm_vocab = kenflm->GetVocabulary();
 	for (auto const c : char_vec)
 	{
 		meta_char_vec.push_back(char2meta(c));
+		index_vec.push_back(flm_vocab.Index(meta_char_vec.back()));
 	}
+	reverse(index_vec.begin(),index_vec.end());
 
 	lt0_vec.resize(char_vec.size(),make_pair(1,'S'));
 	fill_lt0_vec();
@@ -224,12 +228,30 @@ vector<Cand> Segmenter::expand(const Cand &cand, vector<double> &maxent_scores)
 		cand_new.tags += e_tag;
 		string mytag(1,e_tag);
 		double maxent_score = maxent_scores.at(maxent_model->get_tagid(mytag));
+
+		double lm_score = 0.0, flm_score = 0.0;
 		State out_state;
 		const Vocabulary &vocab = kenlm->GetVocabulary();
 		string ct = meta_char_vec.at(cur_pos) + "/" + e_tag;
-		double lm_score = kenlm->Score(cand.lm_state, vocab.Index(ct), out_state);
+		lm_score = kenlm->Score(cand.lm_state, vocab.Index(ct), out_state);
 		cand_new.lm_state = out_state;
-		cand_new.score = cand.score + 0.4*lm_score + 0.6*maxent_score;
+
+		string matching_status;
+		if (lt0_vec.at(cur_pos).first == 1)
+			matching_status = "I/1N";
+		else
+		{
+			if (e_tag == lt0_vec.at(cur_pos).second)
+				matching_status = "L/"+to_string(lt0_vec.at(cur_pos).first)+"N";
+			else
+				matching_status = "N/"+to_string(lt0_vec.at(cur_pos).first)+"N";
+		}
+		size_t len = index_vec.size();
+		State tmp_state;
+		const Vocabulary &flm_vocab = kenflm->GetVocabulary();
+		flm_score = kenflm->FullScoreForgotState(&index_vec.at(len-1-cur_pos),&index_vec.at(len+1-cur_pos),flm_vocab.Index(matching_status),tmp_state).prob;
+
+		cand_new.score = cand.score + 0.4*lm_score + 0.0*flm_score + 0.6*maxent_score;
 		candvec.push_back(cand_new);
 	}
 	return candvec;

@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "segmenter.h"
 
-void seg_file(Model *kenlm, MaxentModel *maxent_model,Dict *dict, string &inputfile, string &outputfile)
+void seg_file(Model *kenlm, MaxentModel *maxent_model, Model *kenflm, Dict *dict, string &inputfile, string &outputfile)
 {
 	ifstream fin;
 	fin.open(inputfile.c_str());
@@ -25,7 +25,7 @@ void seg_file(Model *kenlm, MaxentModel *maxent_model,Dict *dict, string &inputf
 //#pragma omp parallel for num_threads(4)
 	for (size_t i=0;i<input_sen.size();i++)
 	{
-		Segmenter segmenter(kenlm,maxent_model,dict,input_sen.at(i));
+		Segmenter segmenter(kenlm,maxent_model,kenflm,dict,input_sen.at(i));
 		output_sen.at(i) = segmenter.decode();
 	}
 
@@ -76,15 +76,17 @@ int main(int argc, char* argv[])
 		
 	string lm_file = "model/lm_pku";
 	string maxent_file = "model/memodel_chartype_dict_pku";
+	string flm_file = "model/dictflm_3c2m_pku";
 	Model kenlm(lm_file.c_str());
 	MaxentModel maxent_model(maxent_file);
+	Model kenflm(flm_file.c_str());
 	Dict dict;
 
 	end = clock();
 	cout<<"It takes "<<(double)(end-begin)/CLOCKS_PER_SEC<<" seconds to load model.\n";
 	begin = clock();
 
-	seg_file(&kenlm,&maxent_model,&dict,inputfile,outputfile);
+	seg_file(&kenlm,&maxent_model,&kenflm,&dict,inputfile,outputfile);
 
 	end = clock();
 	cout<<"It takes "<<(double)(end-begin)/CLOCKS_PER_SEC<<" seconds to segment the file.\n";
