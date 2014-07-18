@@ -4,7 +4,6 @@ Segmenter::Segmenter(Resources &resources, string &input_sen)
 {
 	NGRAM = 3;
 	kenlm = resources.kenlm;
-	kenflm = resources.kenflm;
 	maxent_model = resources.maxent_model;
 	dict = resources.dict;
 	char_type = resources.char_type;
@@ -13,13 +12,10 @@ Segmenter::Segmenter(Resources &resources, string &input_sen)
 	Str_to_char_vec(char_vec,input_sen,"gbk");
 	char_vec.push_back("E_0");
 	char_vec.push_back("E_1");
-	const Vocabulary &flm_vocab = kenflm->GetVocabulary();
 	for (auto const c : char_vec)
 	{
 		meta_char_vec.push_back(char_type->char2meta(c));
-		index_vec.push_back(flm_vocab.Index(meta_char_vec.back()));
 	}
-	reverse(index_vec.begin(),index_vec.end());
 	sen_len = char_vec.size();
 
 	tag2sub['B'] = 0;
@@ -29,10 +25,6 @@ Segmenter::Segmenter(Resources &resources, string &input_sen)
 	matched_words_vec.resize(sen_len);
 	len_vec.resize(sen_len,1);
 	dict_tag_vec.resize(sen_len,'S');
-	included_ambiguity_vec.resize(sen_len,false);
-	crossed_ambiguity_vec.resize(sen_len,false);
-	ambiguity_status_vec.resize(sen_len,'N');
-	matching_indicator_vec.resize(sen_len,{'N','N','N','N'});
 	fill_dict_info();
 
 	maxent_scores_vec.resize(sen_len);
@@ -66,80 +58,14 @@ void Segmenter::fill_dict_info()
 		}
 	}
 	for (cur_pos=2;cur_pos<sen_len-2;cur_pos++)
-		get_raw_ambiguity_status();
-	for (cur_pos=2;cur_pos<sen_len-2;cur_pos++)
-		get_final_ambiguity_status();
-	for (cur_pos=2;cur_pos<sen_len-2;cur_pos++)
-		get_matching_indicator_and_lt0();
-	/*
-	for (cur_pos=2;cur_pos<sen_len-2;cur_pos++)
-		cout<<ambiguity_status_vec.at(cur_pos)<<len_vec.at(cur_pos)<<dict_tag_vec.at(cur_pos)<<' ';
+	{
+		get_lt0();
+		cout<<len_vec.at(cur_pos)<<dict_tag_vec.at(cur_pos)<<' ';
+	}
 	cout<<endl;
-	*/
 }
 
-void Segmenter::get_raw_ambiguity_status()
-{
-	auto &words = matched_words_vec.at(cur_pos);
-	if (words.size() <= 1)
-		return;
-	vector<pair<int,int> > bwords,ewords;
-	for (const auto w : words)
-	{
-		if (w.first == cur_pos)
-			bwords.push_back(w);
-		if (w.second == cur_pos)
-			ewords.push_back(w);
-	}
-	if (bwords.size()>0)
-	{
-		sort(bwords.begin(),bwords.end(),[](pair<int,int> &lhs,pair<int,int> &rhs){return lhs.second<rhs.second;});
-		for (const auto w : words)
-		{
-			if (w.first < cur_pos && w.second >= bwords.at(0).second)
-			{
-				included_ambiguity_vec.at(cur_pos-1) = true;
-				included_ambiguity_vec.at(cur_pos) = true;
-			}
-			if (w.first < cur_pos && w.second < bwords.at(bwords.size()-1).second)
-			{
-				crossed_ambiguity_vec.at(cur_pos-1) = true;
-				crossed_ambiguity_vec.at(cur_pos) = true;
-			}
-		}
-	}
-	if (ewords.size()>0)
-	{
-		sort(ewords.begin(),ewords.end(),[](pair<int,int> &lhs,pair<int,int> &rhs){return lhs.first<rhs.first;});
-		for (const auto w : words)
-		{
-			if (w.first <= ewords.at(ewords.size()-1).first && w.second > cur_pos)
-			{
-				included_ambiguity_vec.at(cur_pos) = true;
-				included_ambiguity_vec.at(cur_pos+1) = true;
-			}
-			if (w.first > ewords.at(0).first && w.second > cur_pos)
-			{
-				crossed_ambiguity_vec.at(cur_pos) = true;
-				crossed_ambiguity_vec.at(cur_pos+1) = true;
-			}
-		}
-	}
-}
-
-void Segmenter::get_final_ambiguity_status()
-{
-	if (included_ambiguity_vec.at(cur_pos) == true && crossed_ambiguity_vec.at(cur_pos) == true)
-		ambiguity_status_vec.at(cur_pos) = 'M';
-	else if (included_ambiguity_vec.at(cur_pos) == true && crossed_ambiguity_vec.at(cur_pos) == false)
-		ambiguity_status_vec.at(cur_pos) = 'I';
-	else if (included_ambiguity_vec.at(cur_pos) == false && crossed_ambiguity_vec.at(cur_pos) == true)
-		ambiguity_status_vec.at(cur_pos) = 'C';
-	else
-		ambiguity_status_vec.at(cur_pos) = 'N';
-}
-
-void Segmenter::get_matching_indicator_and_lt0()
+void Segmenter::get_lt0()
 {
 	int max_len = 1;
 	char dict_tag = 'S';
@@ -161,27 +87,6 @@ void Segmenter::get_matching_indicator_and_lt0()
 	}
 	len_vec.at(cur_pos) = min(max_len,4);
 	dict_tag_vec.at(cur_pos) = dict_tag;
-	for (const auto w : words)
-	{
-		if (w.second - w.first + 1 == max_len)
-		{
-			if (w.first == cur_pos)
-				matching_indicator_vec.at(cur_pos).at(tag2sub['B']) = 'L';
-			else if (w.second == cur_pos)
-				matching_indicator_vec.at(cur_pos).at(tag2sub['E']) = 'L';
-			else
-				matching_indicator_vec.at(cur_pos).at(tag2sub['M']) = 'L';
-		}
-		else
-		{
-			if (w.first == cur_pos && matching_indicator_vec.at(cur_pos).at(tag2sub['B']) != 'L')
-				matching_indicator_vec.at(cur_pos).at(tag2sub['B']) = 'S';
-			else if (w.second == cur_pos && matching_indicator_vec.at(cur_pos).at(tag2sub['E']) != 'L')
-				matching_indicator_vec.at(cur_pos).at(tag2sub['E']) = 'S';
-			else if (matching_indicator_vec.at(cur_pos).at(tag2sub['M']) != 'L')
-				matching_indicator_vec.at(cur_pos).at(tag2sub['M']) = 'S';
-		}
-	}
 }
 
 string Segmenter::get_output(const string &tags)
@@ -260,20 +165,7 @@ vector<Cand> Segmenter::expand(const Cand &cand, vector<double> &maxent_scores)
 		lm_score = kenlm->Score(cand.lm_state, vocab.Index(ct), out_state);
 		cand_new.lm_state = out_state;
 
-		string matching_indicator(1,matching_indicator_vec.at(cur_pos).at(tag2sub[e_tag]));
-		if (len_vec.at(cur_pos) == 1)
-		{
-			matching_indicator = "I/1N";
-		}
-		else
-		{
-			matching_indicator += "/" + to_string(len_vec.at(cur_pos))+ambiguity_status_vec.at(cur_pos);
-			State tmp_state;
-			const Vocabulary &flm_vocab = kenflm->GetVocabulary();
-			flm_score = kenflm->FullScoreForgotState(&index_vec.at(sen_len-1-cur_pos),&index_vec.at(sen_len+1-cur_pos),flm_vocab.Index(matching_indicator),tmp_state).prob;
-		}
-
-		cand_new.score = cand.score + 0.4*lm_score + 0.0*flm_score + 0.6*maxent_score;
+		cand_new.score = cand.score + 0.4*lm_score + 0.6*maxent_score;
 		candvec.push_back(cand_new);
 	}
 	return candvec;

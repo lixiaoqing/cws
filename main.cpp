@@ -76,13 +76,11 @@ int main(int argc, char* argv[])
 		
 	string lm_file = "model/lm_pku";
 	string maxent_file = "model/memodel_chartype_dict_pku";
-	string flm_file = "model/dictflm_3c2m_pku";
 	Model kenlm(lm_file.c_str());
 	MaxentModel maxent_model(maxent_file);
-	Model kenflm(flm_file.c_str());
 	Dict dict;
 	CharType char_type;
-	Resources resources = {&kenlm,&kenflm,&maxent_model,&dict,&char_type};
+	Resources resources = {&kenlm,&maxent_model,&dict,&char_type};
 
 	end = clock();
 	cout<<"It takes "<<(double)(end-begin)/CLOCKS_PER_SEC<<" seconds to load model.\n";

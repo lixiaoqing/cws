@@ -7,7 +7,6 @@ using namespace lm::ngram;
 struct Resources
 {
 	Model *kenlm;
-	Model *kenflm;
 	MaxentModel *maxent_model;
 	Dict *dict;
 	CharType *char_type;
@@ -39,12 +38,11 @@ class Segmenter
 		void fill_dict_info();
 		void get_raw_ambiguity_status();
 		void get_final_ambiguity_status();
-		void get_matching_indicator_and_lt0();
+		void get_lt0();
 
 	private:
 		Model *kenlm;
 		MaxentModel *maxent_model;
-		Model *kenflm;
 		Dict *dict;
 		CharType *char_type;
 		size_t NGRAM;
@@ -52,15 +50,10 @@ class Segmenter
 		map<char,int> tag2sub;
 		vector<string> char_vec;
 		vector<string> meta_char_vec;
-		vector<lm::WordIndex> index_vec;
 
 		vector<vector<pair<int,int> > > matched_words_vec;
 		vector<int> len_vec;
 		vector<char> dict_tag_vec;
-		vector<bool> included_ambiguity_vec;
-		vector<bool> crossed_ambiguity_vec;
-		vector<char> ambiguity_status_vec;
-		vector<vector<char> > matching_indicator_vec;
 
 		vector<vector<double> > maxent_scores_vec;
 
