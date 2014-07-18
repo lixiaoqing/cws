@@ -260,7 +260,7 @@ vector<Cand> Segmenter::expand(const Cand &cand, vector<double> &maxent_scores)
 		const Vocabulary &flm_vocab = kenflm->GetVocabulary();
 		flm_score = kenflm->FullScoreForgotState(&index_vec.at(sen_len-1-cur_pos),&index_vec.at(sen_len+1-cur_pos),flm_vocab.Index(matching_indicator),tmp_state).prob;
 
-		cand_new.score = cand.score + 0.6*lm_score + 0.5*flm_score + 0.4*maxent_score;
+		cand_new.score = cand.score + 0.5*lm_score + 0.5*flm_score + 0.5*maxent_score;
 		candvec.push_back(cand_new);
 	}
 	return candvec;
