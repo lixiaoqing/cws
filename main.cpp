@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "segmenter.h"
 
-void seg_file(Model *kenlm, MaxentModel *maxent_model, Model *kenflm, Dict *dict, string &inputfile, string &outputfile)
+void seg_file(Resources &resources, string &inputfile, string &outputfile)
 {
 	ifstream fin;
 	fin.open(inputfile.c_str());
@@ -25,7 +25,7 @@ void seg_file(Model *kenlm, MaxentModel *maxent_model, Model *kenflm, Dict *dict
 //#pragma omp parallel for num_threads(4)
 	for (size_t i=0;i<input_sen.size();i++)
 	{
-		Segmenter segmenter(kenlm,maxent_model,kenflm,dict,input_sen.at(i));
+		Segmenter segmenter(resources,input_sen.at(i));
 		output_sen.at(i) = segmenter.decode();
 	}
 
@@ -81,12 +81,14 @@ int main(int argc, char* argv[])
 	MaxentModel maxent_model(maxent_file);
 	Model kenflm(flm_file.c_str());
 	Dict dict;
+	CharType char_type;
+	Resources resources = {&kenlm,&kenflm,&maxent_model,&dict,&char_type};
 
 	end = clock();
 	cout<<"It takes "<<(double)(end-begin)/CLOCKS_PER_SEC<<" seconds to load model.\n";
 	begin = clock();
 
-	seg_file(&kenlm,&maxent_model,&kenflm,&dict,inputfile,outputfile);
+	seg_file(resources,inputfile,outputfile);
 
 	end = clock();
 	cout<<"It takes "<<(double)(end-begin)/CLOCKS_PER_SEC<<" seconds to segment the file.\n";
