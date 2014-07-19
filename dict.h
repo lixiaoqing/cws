@@ -34,3 +34,15 @@ class CharType
 		set<string> fnchar;
 		set<string> cnchar;
 };
+
+class AVfeature
+{
+	public:
+		AVfeature(){load_av();};
+		string get_lav(const string &ngram);
+		string get_rav(const string &ngram);
+	private:
+		void load_av();
+		unordered_map<string,string> lav;
+		unordered_map<string,string> rav;
+};

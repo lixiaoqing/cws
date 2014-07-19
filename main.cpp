@@ -80,7 +80,8 @@ int main(int argc, char* argv[])
 	MaxentModel maxent_model(maxent_file);
 	Dict dict;
 	CharType char_type;
-	Resources resources = {&kenlm,&maxent_model,&dict,&char_type};
+	AVfeature av_feature;
+	Resources resources = {&kenlm,&maxent_model,&dict,&char_type,&av_feature};
 
 	end = clock();
 	cout<<"It takes "<<(double)(end-begin)/CLOCKS_PER_SEC<<" seconds to load model.\n";

@@ -91,3 +91,41 @@ string CharType::char2meta(const string &mychar)
 	return mychar;
 }
 
+void AVfeature::load_av()
+{
+	ifstream fin;
+	fin.open("model/av_feature");
+	if (!fin.is_open())
+	{
+		cerr<<"Fail to open av_feature file!\n";
+		return;
+	}
+	vector <string> toks;
+	string line;
+	while(getline(fin,line))
+	{
+		Split(toks,line);
+		if (toks.size() != 3)
+			continue;
+		lav[toks[0]] = toks[1];
+		rav[toks[0]] = toks[2];
+	}
+}
+
+string AVfeature::get_lav(const string &ngram)
+{
+	auto it = lav.find(ngram);
+	if (it != lav.end())
+		return it->second;
+	else
+		return "0";
+}
+
+string AVfeature::get_rav(const string &ngram)
+{
+	auto it = rav.find(ngram);
+	if (it != rav.end())
+		return it->second;
+	else
+		return "0";
+}

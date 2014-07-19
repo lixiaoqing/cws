@@ -7,6 +7,7 @@ Segmenter::Segmenter(Resources &resources, string &input_sen)
 	maxent_model = resources.maxent_model;
 	dict = resources.dict;
 	char_type = resources.char_type;
+	av_feature = resources.av_feature;
 	TrimLine(input_sen);
 	char_vec = {"B_1","B_0"};
 	Str_to_char_vec(char_vec,input_sen,"gbk");
@@ -120,6 +121,15 @@ vector<string> Segmenter::get_features()
 	feature_vec.push_back("11/"+meta_char_vec.at(cur_pos-1)+dict_tag_vec.at(cur_pos));
 	feature_vec.push_back("12/"+meta_char_vec.at(cur_pos)+dict_tag_vec.at(cur_pos));
 	feature_vec.push_back("13/"+meta_char_vec.at(cur_pos+1)+dict_tag_vec.at(cur_pos));
+	string lav1,lav2,rav1,rav2;
+	lav1 = av_feature->get_lav(char_vec.at(cur_pos)+char_vec.at(cur_pos+1));
+	lav2 = av_feature->get_lav(char_vec.at(cur_pos+1)+char_vec.at(cur_pos+2));
+	rav1 = av_feature->get_rav(char_vec.at(cur_pos-2)+char_vec.at(cur_pos-1));
+	rav2 = av_feature->get_rav(char_vec.at(cur_pos-1)+char_vec.at(cur_pos));
+	feature_vec.push_back("14/"+lav1);
+	feature_vec.push_back("15/"+lav2);
+	feature_vec.push_back("16/"+rav1);
+	feature_vec.push_back("17/"+rav2);
 	return feature_vec;
 }
 

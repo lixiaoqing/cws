@@ -10,6 +10,7 @@ struct Resources
 	MaxentModel *maxent_model;
 	Dict *dict;
 	CharType *char_type;
+	AVfeature *av_feature;
 };
 
 struct Cand
@@ -42,6 +43,7 @@ class Segmenter
 		MaxentModel *maxent_model;
 		Dict *dict;
 		CharType *char_type;
+		AVfeature *av_feature;
 		size_t NGRAM;
 		map<char,vector<char> > validtagtable;
 		vector<string> char_vec;
