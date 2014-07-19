@@ -35,10 +35,7 @@ class Segmenter
 
 		string get_output(const string &tags);
 		vector<string> get_features();
-		void fill_dict_info();
-		void get_raw_ambiguity_status();
-		void get_final_ambiguity_status();
-		void get_lt0();
+		void fill_lt0_vec();
 
 	private:
 		Model *kenlm;
@@ -47,11 +44,9 @@ class Segmenter
 		CharType *char_type;
 		size_t NGRAM;
 		map<char,vector<char> > validtagtable;
-		map<char,int> tag2sub;
 		vector<string> char_vec;
 		vector<string> meta_char_vec;
 
-		vector<vector<pair<int,int> > > matched_words_vec;
 		vector<int> len_vec;
 		vector<char> dict_tag_vec;
 

@@ -15,7 +15,7 @@ class Dict
 			root = new TrieNode;
 			load_dict();
 		};
-		vector<pair<int,int> > find_matched_dict_words(vector<string> &char_vec,size_t pos);
+		int find_longest_match(vector<string> &char_vec,size_t pos);
 	private:
 		void load_dict();
 		void add_word(vector<string> &char_vec);

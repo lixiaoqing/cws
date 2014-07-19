@@ -40,25 +40,25 @@ void Dict::add_word(vector<string> &char_vec)
 	current->flag = true;
 }
 
-vector<pair<int,int> > Dict::find_matched_dict_words(vector<string> &char_vec,size_t pos)
+int Dict::find_longest_match(vector<string> &char_vec,size_t pos)
 {
-	vector<pair<int,int> > matched_words;
 	TrieNode* current = root;
+	int len = 1;
 	for (size_t i=pos;i<char_vec.size();i++)
 	{
 		auto it = current->char_to_children_map.find(char_vec.at(i));
 		if (it != current->char_to_children_map.end())
 		{
 			current = it->second;
-			if (current->flag == true && i != pos)
+			if (current->flag == true)
 			{
-				matched_words.push_back(make_pair(pos,i));
+				len = i - pos + 1;
 			}
 		}
 		else
 			break;
 	}
-	return matched_words;
+	return len;
 }
 
 void CharType::load_chartype()

@@ -18,14 +18,9 @@ Segmenter::Segmenter(Resources &resources, string &input_sen)
 	}
 	sen_len = char_vec.size();
 
-	tag2sub['B'] = 0;
-	tag2sub['M'] = 1;
-	tag2sub['E'] = 2;
-	tag2sub['S'] = 3;
-	matched_words_vec.resize(sen_len);
 	len_vec.resize(sen_len,1);
 	dict_tag_vec.resize(sen_len,'S');
-	fill_dict_info();
+	fill_lt0_vec();
 
 	maxent_scores_vec.resize(sen_len);
 	for (cur_pos=2;cur_pos<sen_len-2;cur_pos++)
@@ -44,49 +39,33 @@ Segmenter::Segmenter(Resources &resources, string &input_sen)
 	validtagtable['S'] = {'S','B'};
 }
 
-void Segmenter::fill_dict_info()
+void Segmenter::fill_lt0_vec()
 {
-	for (cur_pos=2;cur_pos<sen_len-2;cur_pos++)
+	for (cur_pos=2;cur_pos<char_vec.size()-2;cur_pos++)
 	{
-		vector<pair<int,int> > matched_words = dict->find_matched_dict_words(char_vec,cur_pos);
-		for (const auto &w : matched_words)
+		int max_len = dict->find_longest_match(char_vec,cur_pos);
+		if (max_len >1)
 		{
-			for(size_t i=w.first;i<=w.second;i++)
+			if (len_vec.at(cur_pos) < max_len)
 			{
-				matched_words_vec.at(i).push_back(w);
+				len_vec.at(cur_pos) = max_len;
+				dict_tag_vec.at(cur_pos) = 'B';
+			}
+			if (len_vec.at(cur_pos+max_len-1) < max_len)
+			{
+				len_vec.at(cur_pos+max_len-1) = max_len;
+				dict_tag_vec.at(cur_pos+max_len-1) = 'E';
+			}
+			for (size_t i=cur_pos+1;i<cur_pos+max_len-1;i++)
+			{
+				if (len_vec.at(i) < max_len)
+				{
+					len_vec.at(i) = max_len;
+					dict_tag_vec.at(i) = 'M';
+				}
 			}
 		}
 	}
-	for (cur_pos=2;cur_pos<sen_len-2;cur_pos++)
-	{
-		get_lt0();
-		cout<<len_vec.at(cur_pos)<<dict_tag_vec.at(cur_pos)<<' ';
-	}
-	cout<<endl;
-}
-
-void Segmenter::get_lt0()
-{
-	int max_len = 1;
-	char dict_tag = 'S';
-	auto &words = matched_words_vec.at(cur_pos);
-	if (words.size() == 0)
-		return;
-	for (const auto w : words)
-	{
-		if (w.second - w.first + 1 > max_len)
-		{
-			max_len = w.second - w.first + 1;
-			if (w.first == cur_pos)
-				dict_tag = 'B';
-			else if (w.second == cur_pos)
-				dict_tag = 'E';
-			else
-				dict_tag = 'M';
-		}
-	}
-	len_vec.at(cur_pos) = min(max_len,4);
-	dict_tag_vec.at(cur_pos) = dict_tag;
 }
 
 string Segmenter::get_output(const string &tags)
